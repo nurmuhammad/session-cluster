@@ -1,4 +1,4 @@
-package com.example.demo.config;
+package com.smartbox.sessioncluster.config;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
