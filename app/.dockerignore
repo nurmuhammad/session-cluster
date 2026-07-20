@@ -1,0 +1,5 @@
+src
+!target/*.jar
+.mvn
+mvnw
+mvnw.cmd

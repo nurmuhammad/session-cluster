@@ -1,0 +1,17 @@
+# Alohida Hazelcast server.
+# Spring Session sinflari (EntryProcessor, PrincipalNameExtractor, MapSession)
+# server classpath'ida bo'lishi SHART — shuning uchun app bilan bir xil versiyadagi
+# jar'larni (app/hz-ext) shu yerga nusxalaymiz.
+#
+# Versiyani app'nikiga moslang:
+#   mvn -f app/pom.xml dependency:tree | grep hazelcast
+FROM hazelcast/hazelcast:5.5.0
+
+# Spring Session jar'lari (mvn package paytida app/hz-ext ichiga tushadi)
+COPY app/hz-ext/*.jar /opt/hazelcast/lib/
+
+# Bizning cluster konfiguratsiyamiz
+COPY hazelcast/hazelcast.xml /opt/hazelcast/config/custom-hazelcast.xml
+
+ENV JAVA_OPTS="-Dhazelcast.config=/opt/hazelcast/config/custom-hazelcast.xml"
+ENV CLASSPATH="/opt/hazelcast/lib/*"

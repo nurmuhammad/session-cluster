@@ -1,0 +1,52 @@
+server:
+  port: 8080
+  # nginx ortida ishlaymiz: X-Forwarded-* header'larga ishonib, redirect URL'larni
+  # to'g'ri (localhost:8080) quradi. Busiz Spring portsiz redirect yasaydi.
+  forward-headers-strategy: framework
+  # Sessiya cookie sozlamalari (barcha instance uchun bir xil bo'lishi kerak)
+  servlet:
+    session:
+      # Sessiyani FAQAT cookie orqali kuzatamiz. Busiz Tomcat cookie'siz
+      # so'rovlarda URL'ga ";SESSION=..." qo'shadi (URL rewriting) -> bu chalkashlik
+      # va sessiya churn'iga sabab bo'ladi.
+      tracking-modes: cookie
+      cookie:
+        name: SESSION
+        http-only: true
+        same-site: lax
+        # Production HTTPS bo'lsa: secure: true
+
+spring:
+  application:
+    name: session-app
+
+  # --- Postgres (faqat DATA) ---
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/appdb}
+    username: ${DB_USER:appuser}
+    password: ${DB_PASSWORD:apppass}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+# JTE precompiled rejim (jar ichida ishlashi uchun)
+gg:
+  jte:
+    development-mode: false
+    use-precompiled-templates: true
+
+# Alohida Hazelcast serveriga ulanish (client rejim)
+hazelcast:
+  addresses: ${HZ_ADDRESSES:127.0.0.1:5701}
+  cluster-name: ${HZ_CLUSTER:spring-session-cluster}
+  session:
+    map-name: "spring:session:sessions"
+    timeout-minutes: 30
+
+logging:
+  level:
+    org.springframework.session: INFO
+    com.hazelcast: WARN

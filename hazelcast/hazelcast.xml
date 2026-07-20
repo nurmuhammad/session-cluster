@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hazelcast xmlns="http://www.hazelcast.com/schema/config"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://www.hazelcast.com/schema/config
+                               http://www.hazelcast.com/schema/config/hazelcast-config-5.5.xsd">
+
+    <cluster-name>spring-session-cluster</cluster-name>
+
+    <network>
+        <port auto-increment="false">5701</port>
+        <join>
+            <!-- Docker tarmog'ida node'lar bir-birini nom bo'yicha topadi -->
+            <auto-detection enabled="false"/>
+            <multicast enabled="false"/>
+            <tcp-ip enabled="true">
+                <member>hazelcast-1</member>
+                <member>hazelcast-2</member>
+            </tcp-ip>
+        </join>
+    </network>
+
+    <!-- Sessiya map'i: 1 ta backup => bitta node o'chsa ham sessiya yo'qolmaydi.
+         in-memory-format=BINARY: server sessiyani faqat bayt sifatida saqlaydi va
+         hech qachon deserialize qilmaydi. Shu bois Hazelcast node'ida MapSession
+         yoki spring-security klasslari BO'LISHI shart emas — (de)serializatsiyani
+         to'liq app-client bajaradi. -->
+    <map name="spring:session:sessions">
+        <backup-count>1</backup-count>
+        <in-memory-format>BINARY</in-memory-format>
+    </map>
+
+</hazelcast>
