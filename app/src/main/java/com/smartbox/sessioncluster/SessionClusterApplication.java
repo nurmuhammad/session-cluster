@@ -13,9 +13,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * {@link com.smartbox.sessioncluster.config.SessionConfig}'да.
  */
 @SpringBootApplication
-public class DemoApplication {
+public class SessionClusterApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(DemoApplication.class, args);
+        SpringApplication.run(SessionClusterApplication.class, args);
     }
 }

@@ -45,7 +45,7 @@ session-cluster/
     ├── Dockerfile
     └── src/main/
         ├── java/com/smartbox/sessioncluster/
-        │   ├── DemoApplication.java
+        │   ├── SessionClusterApplication.java
         │   ├── config/SessionConfig.java     # Hazelcast CLIENT + @EnableSpringHttpSession
         │   ├── config/SecurityConfig.java    # form login + CSRF
         │   ├── web/PageController.java        # dashboard + /api/ping
