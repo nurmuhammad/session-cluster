@@ -16,40 +16,55 @@ import java.time.Duration;
 import java.util.Arrays;
 
 /**
- * Sessiyani ALOHIDA ishlab turgan Hazelcast serveriga (cluster'ga) yozadi.
+ * HTTP-сессияни ташқи Hazelcast кластерига боғлайди (native Spring Boot 4 усули).
  *
- * MUHIM: Spring Boot 4 (Spring Session 4.0) spring-session-hazelcast modulini
- * olib tashladi. Shuning uchun bu yerda spring-session-core'ning umumiy
- * {@link MapSessionRepository}'sidan foydalanamiz: u har qanday {@link java.util.Map}
- * ustida ishlaydi, Hazelcast client'ning IMap'i esa aynan Map'dir. Natijada
- * sessiya baribir tashqi, umumiy Hazelcast store'da yotadi — arxitektura o'zgarmaydi.
+ * <p>Spring Boot 4 (Spring Session 4.0) {@code spring-session-hazelcast}
+ * модулини BOM'дан олиб ташлади, шунинг учун эски
+ * {@code @EnableHazelcastHttpSession} механизми бу ерда умуман қурилмайди.
+ * Ўрнига {@code spring-session-core}'даги умумий {@link MapSessionRepository}'дан
+ * фойдаланамиз: у истаган {@link java.util.Map} устида ишлайди, Hazelcast
+ * client'нинг {@link IMap}'и эса айнан {@code Map}. {@link IMap} distributed
+ * бўлгани учун сессия барибир ташқи, умумий store'да қолади — премиса
+ * ўзгармайди, фақат уланиш йўли ўзгарди.
  *
- * embedded emas, CLIENT rejim ishlatiladi: ikkala app.jar ham shu klient orqali
- * bitta Hazelcast cluster'iga ulanadi, shuning uchun sessiya har ikkala instance
- * uchun umumiy bo'ladi.
+ * <p>embedded эмас, <b>CLIENT</b> режим ишлатилади: иккала {@code app.jar} ҳам
+ * шу client орқали битта Hazelcast кластерига уланади, шунинг учун сессия ҳар
+ * икки нусха учун умумий.
+ *
+ * <p>Камчилиги (демо учун аҳамиятсиз): native {@code IMap} get/put ишлатилгани
+ * учун Spring Session'нинг EntryProcessor delta-update'и ва principal-name
+ * индекси йўқолади — битта сессияни бир вақтда икки сўров янгиласа, охиргиси ютади.
  */
 @Configuration
 @EnableSpringHttpSession
 public class SessionConfig {
 
-    /**
-     * Hazelcast node manzillari, vergul bilan ajratilgan.
-     * Masalan: "hazelcast-1:5701,hazelcast-2:5701"
-     */
+    /** Hazelcast node манзиллари, вергул билан ажратилган (масалан {@code hazelcast-1:5701,hazelcast-2:5701}). */
     @Value("${hazelcast.addresses:127.0.0.1:5701}")
     private String hazelcastAddresses;
 
     @Value("${hazelcast.cluster-name:spring-session-cluster}")
     private String clusterName;
 
-    /** Sessiyalar saqlanadigan Hazelcast map nomi (hazelcast.xml bilan bir xil). */
+    /** Сессиялар сақланадиган Hazelcast map номи; {@code hazelcast.xml}'даги map номи билан бир хил бўлиши шарт. */
     @Value("${hazelcast.session.map-name:spring:session:sessions}")
     private String sessionMapName;
 
-    /** Sessiya harakatsizlik timeout'i (daqiqa). */
+    /** Сессиянинг ҳаракатсизлик timeout'и (дақиқа). */
     @Value("${hazelcast.session.timeout-minutes:30}")
     private long sessionTimeoutMinutes;
 
+    /**
+     * Hazelcast кластерига CLIENT режимда уланувчи {@link HazelcastInstance} яратади.
+     *
+     * <p>Client битта node ўчганда бошқасига чидамли бўлиши учун созланган:
+     * {@code redoOperation} узилган операцияни қайта юборади, {@code clusterConnectTimeout}
+     * эса чексиз — шунда кластер вақтинча йўқолса ҳам client узилмай қайта
+     * уланишга уринаверади. {@code destroyMethod = "shutdown"} bean йўқолганда
+     * client'ни тоза ёпади.
+     *
+     * @return созланган Hazelcast client instance'и
+     */
     @Bean(destroyMethod = "shutdown")
     public HazelcastInstance hazelcastInstance() {
         ClientConfig clientConfig = new ClientConfig();
@@ -61,7 +76,7 @@ public class SessionConfig {
                 .toArray(String[]::new);
         clientConfig.getNetworkConfig().addAddress(addresses);
 
-        // Bitta node o'chsa, klient boshqa node'ga qayta ulanaveradi
+        // Битта node ўчса, client бошқа node'га қайта уланаверади
         clientConfig.getNetworkConfig().setRedoOperation(true);
         clientConfig.getConnectionStrategyConfig()
                 .getConnectionRetryConfig()
@@ -71,8 +86,16 @@ public class SessionConfig {
     }
 
     /**
-     * Spring Session'ning SessionRepository'si Hazelcast IMap ustida.
-     * IMap distributed bo'lgani uchun sessiya butun cluster bo'ylab ko'rinadi.
+     * Spring Session'нинг {@link SessionRepository}'сини Hazelcast {@link IMap}
+     * устига қуради.
+     *
+     * <p>{@link MapSessionRepository} сессияларни оддий {@code Map} операциялари
+     * (get/put/remove) орқали сақлайди. {@link IMap} distributed бўлгани учун
+     * битта нусха ёзган сессияни бошқа нусха ўша {@code sessionId} бўйича топади —
+     * session clustering'нинг асоси шу.
+     *
+     * @param hazelcastInstance CLIENT режимдаги Hazelcast уланиши
+     * @return {@code IMap} билан таъминланган сессия репозиторийси
      */
     @Bean
     public SessionRepository<? extends Session> sessionRepository(HazelcastInstance hazelcastInstance) {
