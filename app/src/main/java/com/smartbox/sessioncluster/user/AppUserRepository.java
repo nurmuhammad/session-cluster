@@ -1,4 +1,4 @@
-package com.example.demo.user;
+package com.smartbox.sessioncluster.user;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
