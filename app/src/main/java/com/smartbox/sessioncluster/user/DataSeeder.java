@@ -1,5 +1,6 @@
-package com.example.demo.user;
+package com.smartbox.sessioncluster.user;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,17 +15,16 @@ import org.springframework.stereotype.Component;
  * бўш деб кўриб {@code admin}'ни ёзишга уриниши мумкин. Иккинчисида unique
  * constraint бузилиб {@link DataIntegrityViolationException} отилади; уни хотиржам
  * ютамиз, чунки бу «бошқа нусха аллақачон seed қилди» дегани — хатолик эмас.
+ *
+ * <p>Инъекция қилинадиган {@code final} майдонлар конструктори Lombok'нинг
+ * {@link RequiredArgsConstructor}'и орқали генерация қилинади.
  */
 @Component
+@RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
     private final AppUserRepository repository;
     private final PasswordEncoder passwordEncoder;
-
-    public DataSeeder(AppUserRepository repository, PasswordEncoder passwordEncoder) {
-        this.repository = repository;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     @Override
     public void run(String... args) {
