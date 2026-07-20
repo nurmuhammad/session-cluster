@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.smartbox.sessioncluster;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,7 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * {@code app2}) сифатида ишлайди. HTTP-сессия ҳеч бир нусханинг локал хотирасида
  * эмас, ташқи Hazelcast кластерида сақланади — шунинг учун сўров қайси нусхага
  * тушишидан қатъи назар фойдаланувчи логин ҳолатда қолади. Сессия механизми
- * {@link com.example.demo.config.SessionConfig}'да.
+ * {@link com.smartbox.sessioncluster.config.SessionConfig}'да.
  */
 @SpringBootApplication
 public class DemoApplication {
