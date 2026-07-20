@@ -8,7 +8,7 @@
 Spring Boot 4 веб-илова икки нусхада (`app1`, `app2`) load balancer (nginx) ортида
 ишлайди. HTTP-сессия **алоҳида Hazelcast кластерида** сақланади, шунинг учун сўров
 қайси app нусхасига тушишидан қатъи назар фойдаланувчи логин ҳолатда қолади
-(session clustering). Postgres фақат биsnес-датани (фойдаланувчилар) сақлайди.
+(session clustering). Postgres фақат бизнес-датани (фойдаланувчилар) сақлайди.
 
 Асосий ғоя: сессия ҳеч қайси app нусхасининг **локал хотирасида** эмас, ташқи,
 умумий store'да (Hazelcast) ётади.
@@ -16,7 +16,9 @@ Spring Boot 4 веб-илова икки нусхада (`app1`, `app2`) load ba
 ## Технологиялар
 
 - Java 21, Spring Boot 4 (Web, Security, Data JPA)
-- Spring Session + Hazelcast (client режим)
+- Spring Session (`spring-session-core`) — сессияни Hazelcast client `IMap`'ига
+  `MapSessionRepository` орқали ёзади (native Boot 4 усули; тафсилот `ARCHITECTURE.md`'да)
+- Hazelcast 5.5 — ташқи сессия store (client режим)
 - JTE — сервер томонда HTML рендер қилувчи шаблон двигатели
 - AlpineJS — енгил клиент-томон интерактивлик (CDN орқали)
 - PostgreSQL 18 — фақат маълумот
@@ -27,20 +29,24 @@ Spring Boot 4 веб-илова икки нусхада (`app1`, `app2`) load ba
 
 ```
 session-cluster/
+├── settings.gradle             # Gradle root (include 'app')
+├── gradlew, gradlew.bat        # Gradle wrapper — алоҳида Gradle керак эмас
+├── gradle/wrapper/             # wrapper jar + properties (Gradle 9.1.0)
 ├── docker-compose.yml          # 2 app + 2 hazelcast + postgres + nginx
-├── Dockerfile.hazelcast        # Hazelcast + spring-session jar'lari
+├── Dockerfile.hazelcast        # Hazelcast node (BINARY session map)
 ├── nginx/nginx.conf            # load balancer
-├── hazelcast/hazelcast.xml     # cluster + session map (backup-count=1)
-├── README.md                   # ishga tushirish qo'llanmasi
-├── ARCHITECTURE.md             # chuqurroq arxitektura izohi
-├── TROUBLESHOOTING.md          # tez-tez uchraydigan muammolar
+├── hazelcast/hazelcast.xml     # cluster + session map (BINARY, backup-count=1)
+├── README.md                   # ишга тушириш қўлланмаси
+├── ARCHITECTURE.md             # чуқурроқ архитектура изоҳи
+├── TROUBLESHOOTING.md          # тез-тез учрайдиган муаммолар
 └── app/
-    ├── pom.xml
+    ├── build.gradle            # Spring Boot 4 + JTE + copyHzLibs (асосий конфиг)
+    ├── hz-ext/                 # copyHzLibs яратади (commit қилинмайди)
     ├── Dockerfile
     └── src/main/
         ├── java/com/example/demo/
         │   ├── DemoApplication.java
-        │   ├── config/SessionConfig.java     # Hazelcast CLIENT + @EnableHazelcastHttpSession
+        │   ├── config/SessionConfig.java     # Hazelcast CLIENT + @EnableSpringHttpSession
         │   ├── config/SecurityConfig.java    # form login + CSRF
         │   ├── web/PageController.java        # dashboard + /api/ping
         │   └── user/                          # JPA entity, repo, UserDetailsService, seeder
@@ -51,22 +57,23 @@ session-cluster/
 ## Тез-тез ишлатиладиган буйруқлар
 
 ```bash
-# App'ni qurish (target/*.jar va app/hz-ext/*.jar hosil bo'ladi)
-mvn -f app/pom.xml clean package -DskipTests
+# App'ни қуриш (build/libs/*.jar ва app/hz-ext/*.jar ҳосил бўлади)
+# Windows PowerShell'да: .\gradlew.bat :app:build
+./gradlew :app:build
 
-# Faqat kompilyatsiya
-mvn -f app/pom.xml compile
+# Фақат компиляция
+./gradlew :app:compileJava
 
-# Butun stack'ni ko'tarish
+# Бутун стекни кўтариш
 docker compose up --build
 
-# Bitta app nusxasini o'chirib sinash (sessiya saqlanishi kerak)
+# Битта app нусхасини ўчириб синаш (сессия сақланиши керак)
 docker compose stop app1
 
-# Hazelcast versiyasini tekshirish (server image'ga moslash uchun)
-mvn -f app/pom.xml dependency:tree | grep hazelcast
+# Hazelcast версиясини текшириш (server образига мослаш учун)
+./gradlew :app:dependencies --configuration runtimeClasspath | grep -i hazelcast
 
-# Loglar
+# Логлар
 docker compose logs -f app1 hazelcast-1
 ```
 
@@ -79,35 +86,50 @@ docker compose logs -f app1 hazelcast-1
    ёзади. Статик `Map`, `@SessionScope` bean, ёки локал кэшда фойдаланувчи ҳолатини
    сақламанг — акс ҳолда кластерда бузилади.
 
-2. **Spring Session jar'лари Hazelcast серверида бўлиши ШАРТ.** Ташқи Hazelcast
-   серверда `SessionUpdateEntryProcessor`, `PrincipalNameExtractor`, `MapSession`
-   классларини ишлатади. `pom.xml`'даги `maven-dependency-plugin` уларни
-   `app/hz-ext/`'га кўчиради, `Dockerfile.hazelcast` эса node'га қўшади. Бу
-   механизмни бузманг; версия app билан бир хил бўлиши керак.
+2. **Сессия механизми — native Boot 4.** Spring Boot 4 `spring-session-hazelcast`
+   модулини олиб ташлаган, шунинг учун `@EnableHazelcastHttpSession`'ни қайта
+   қўшманг — у Boot 4'да умуман қурилмайди. Ўрнига `SessionConfig`'да
+   `@EnableSpringHttpSession` + `MapSessionRepository` Hazelcast client `IMap`
+   устида ишлайди (`ARCHITECTURE.md`'га қаранг).
 
-3. **Версияга сезгир жойлар.** Spring Boot `4.0.0`, JTE `3.2.1`, Hazelcast server
-   образи `5.5.0`. Client (app) Hazelcast версиясини server образига мосланг.
+3. **Hazelcast серверида Spring jar'лари керак ЭМАС.** Сессия map'и
+   `hazelcast.xml`'да `in-memory-format: BINARY` — node фақат байт сақлайди,
+   deserialize қилмайди. Шу боис node classpath'ида `MapSession` ёки
+   spring-security класслари бўлиши шарт эмас. (`build.gradle`'даги `copyHzLibs` (Sync)
+   task `spring-session-core`'ни `app/hz-ext/`'га кўчиради — эски OBJECT-format
+   ёндашувдан қолган зарарсиз қолдиқ,
+   BINARY'да ишлатилмайди.)
 
-4. **JTE шаблонлари build вақтида компиляция қилинади** (`jte-maven-plugin`нинг
-   `generate` goal'и + `gg.jte.use-precompiled-templates=true`). Янги `.jte`
+4. **Версияга сезгир жойлар.** Spring Boot `4.0.0`, JTE `3.2.1`, Hazelcast server
+   образи `5.5.0`, Gradle `9.1.0` (wrapper'да ёзилган). `spring-session-core`
+   версияси Boot BOM'дан келади (алоҳида ёзилмайди). Client (app) Hazelcast
+   версиясини server образига мосланг.
+
+5. **JTE шаблонлари build вақтида компиляция қилинади** (`gg.jte.gradle` Gradle
+   плагини, `jte { generate() }` + `gg.jte.use-precompiled-templates=true`). Янги `.jte`
    қўшсангиз, model калитлари шаблондаги `@param`лар билан аниқ мос келиши керак.
 
-5. **AlpineJS'да `@` белгиси JTE билан тўқнашади.** `.jte` ичида Alpine'нинг
+6. **AlpineJS'да `@` белгиси JTE билан тўқнашади.** `.jte` ичида Alpine'нинг
    `@click`ини `@@click` деб ёзинг (`@@` → литерал `@`).
 
-6. **CSRF ёқилган.** POST/AJAX сўровларда CSRF token'ни header'га қўшинг
-   (`dashboard.jte`'даги `pinger()`га қаранг). Token сессияда — Hazelcast орқали умумий.
+7. **CSRF ёқилган.** POST/AJAX сўровларда CSRF token'ни header'га қўшинг
+   (`dashboard.jte`'даги `pinger()`га қаранг). Token сессияда — Hazelcast орқали
+   умумий. Шунингдек `/error` `permitAll` бўлиши ва
+   `server.servlet.session.tracking-modes: cookie` туриши шарт — акс ҳолда
+   favicon/`/error` сабабли рақобатчи сессия яралиб «Invalid CSRF» (403) чиқади
+   (`SecurityConfig` JavaDoc'ига қаранг).
 
-7. **Sticky session КЕРАК ЭМАС.** Сессия ташқарида бўлгани учун nginx'да
+8. **Sticky session КЕРАК ЭМАС.** Сессия ташқарида бўлгани учун nginx'да
    round-robin ҳам, least_conn ҳам ишлайверади. Stickiness қўшманг.
 
 ## Конвенциялар
 
 - Ҳар бир app нусхаси айнан бир хил `application.yml` билан ишлайди; фарқ фақат
-  environment o'zgaruvchиларда (`INSTANCE_NAME`, `HZ_ADDRESSES`, `DB_*`).
-- Конфигурация environment o'zгарувчилари орқали бошқарилади (12-factor).
-- Yangi endpoint qo'shsangiz, `SecurityConfig`'да ruxsatlar (permitAll/authenticated)ни
-  ям yangилашни унутманг.
+  environment ўзгарувчиларда (`INSTANCE_NAME`, `HZ_ADDRESSES`, `DB_*`).
+- Конфигурация environment ўзгарувчилари орқали бошқарилади (12-factor).
+- Янги endpoint қўшсангиз, `SecurityConfig`'да рухсатлар
+  (permitAll/authenticated)ни ҳам янгилашни унутманг.
+- Сессияга ёзадиган код фақат `HttpSession` ишлатсин (қоида №1).
 
 ## Билмаган нарсангизда
 
