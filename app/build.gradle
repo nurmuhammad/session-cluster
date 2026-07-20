@@ -1,0 +1,74 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.0'
+    id 'io.spring.dependency-management' version '1.1.7'
+    // JTE shablonlarni build vaqtida kompilyatsiya qiladi
+    id 'gg.jte.gradle' version '3.2.1'
+}
+
+group = 'com.example'
+version = '1.0.0'
+description = 'Spring Boot 4 + JTE + AlpineJS + Hazelcast session clustering'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // Sessiyani Hazelcast'da saqlash.
+    // MUHIM: Spring Boot 4 -> Spring Session 4.0 spring-session-hazelcast modulini
+    // olib tashladi. Shuning uchun spring-session-core'dagi umumiy MapSessionRepository'ni
+    // Hazelcast client IMap ustiga qo'yamiz (SessionConfig.java'ga qarang).
+    implementation 'org.springframework.session:spring-session-core'
+    implementation 'com.hazelcast:hazelcast'
+
+    // JTE shablon dvigateli
+    implementation 'gg.jte:jte-spring-boot-starter-3:3.2.1'
+    implementation 'gg.jte:jte:3.2.1'
+
+    // Postgres driver
+    runtimeOnly 'org.postgresql:postgresql'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+}
+
+// JTE: src/main/jte -> generatsiya qilingan Java kod (precompiled rejim).
+// application.yml'da gg.jte.use-precompiled-templates=true bilan mos keladi.
+jte {
+    generate()
+    contentType = gg.jte.ContentType.Html
+}
+
+// Spring Session jar'ini ALOHIDA Hazelcast serveriga uzatish uchun hz-ext'ga
+// nusxalaydi (Maven'dagi maven-dependency-plugin o'rniga). App bilan AYNAN bir xil
+// versiyani kafolatlaydi. Sync => hz-ext'da faqat spring-session-core qoladi,
+// eski/begona jar'lar avtomatik tozalanadi.
+tasks.register('copyHzLibs', Sync) {
+    from({ configurations.runtimeClasspath.filter { it.name.startsWith('spring-session-core') } })
+    into layout.projectDirectory.dir('hz-ext')
+}
+tasks.named('assemble') {
+    dependsOn 'copyHzLibs'
+}
+
+// bootJar nomi "session-app-1.0.0.jar" bo'lsin (modul nomi "app" bo'lsa ham).
+// Dockerfile shu nomni kutadi.
+bootJar {
+    archiveBaseName = 'session-app'
+}
+
+// Faqat bajariladigan bootJar kerak; oddiy "-plain.jar"ni o'chiramiz.
+tasks.named('jar') {
+    enabled = false
+}

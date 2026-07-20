@@ -1,0 +1,5 @@
+// Repo ildizidagi Gradle root. Haqiqiy modul — app/ (u yerda build.gradle).
+// IntelliJ shu papkani ochsa, :app moduli avtomatik import bo'ladi.
+rootProject.name = 'session-cluster'
+
+include 'app'
