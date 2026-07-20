@@ -44,7 +44,7 @@ session-cluster/
     ├── hz-ext/                 # copyHzLibs яратади (commit қилинмайди)
     ├── Dockerfile
     └── src/main/
-        ├── java/com/example/demo/
+        ├── java/com/smartbox/sessioncluster/
         │   ├── DemoApplication.java
         │   ├── config/SessionConfig.java     # Hazelcast CLIENT + @EnableSpringHttpSession
         │   ├── config/SecurityConfig.java    # form login + CSRF

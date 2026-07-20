@@ -121,7 +121,7 @@ session-cluster/
     ├── build.gradle            # Spring Boot 4 + JTE + copyHzLibs
     ├── Dockerfile
     └── src/main/
-        ├── java/com/example/demo/
+        ├── java/com/smartbox/sessioncluster/
         │   ├── config/SessionConfig.java     # Hazelcast CLIENT + @EnableSpringHttpSession
         │   ├── config/SecurityConfig.java    # form login, CSRF
         │   ├── web/PageController.java        # dashboard + /api/ping
