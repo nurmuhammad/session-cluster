@@ -8,8 +8,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * Foydalanuvchi Postgres'da saqlanadi (faqat DATA).
- * Sessiya bu yerda EMAS — u Hazelcast'da.
+ * Фойдаланувчи — Postgres'да сақланадиган ягона бизнес-дата.
+ *
+ * <p>Сессия бу ерда ЭМАС: у Hazelcast'да. Postgres фақат «ким рўйхатдан ўтган»
+ * (логин, BCrypt hash, роль)ни билади, «ким ҳозир логин ҳолатда»ни эмас — бу
+ * маълумот сессияда, яъни Hazelcast'да ётади.
  */
 @Entity
 @Table(name = "app_users")

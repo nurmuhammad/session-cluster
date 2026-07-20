@@ -16,10 +16,17 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Дашборд саҳифаси ва {@code /api/ping} endpoint'и.
+ *
+ * <p>Ҳолат (кўришлар сони, ping сони) {@link HttpSession}'га ёзилади — уни Spring
+ * Session автоматик Hazelcast'га узатади. Шунинг учун сўров app1'га ҳам, app2'га
+ * ҳам тушса, ҳисоб сақланиб қолади; айнан шу нарса session clustering'ни кўрсатади.
+ */
 @Controller
 public class PageController {
 
-    /** Qaysi app instance so'rovga javob berayotganini aniqlaydi. */
+    /** Сўровга қайси app нусхаси жавоб бераётганини аниқлайди ({@code INSTANCE_NAME} env, бўлмаса hostname). */
     private String instanceName() {
         String fromEnv = System.getenv("INSTANCE_NAME");
         if (fromEnv != null && !fromEnv.isBlank()) {
@@ -32,6 +39,12 @@ public class PageController {
         }
     }
 
+    /**
+     * Логин саҳифасини рендер қилади ({@code login.jte}).
+     *
+     * <p>CSRF token'ни аниқ моделга қўшамиз, чунки шаблон уни яширин {@code input}
+     * сифатида чиқариши керак — усиз {@code POST /login} 403 (Invalid CSRF) беради.
+     */
     @GetMapping("/login")
     public String login(@RequestParam(required = false) String error,
                         @RequestParam(required = false) String logout,
@@ -43,12 +56,18 @@ public class PageController {
         return "login";
     }
 
+    /**
+     * Дашбордни кўрсатади ва ҳар киришда сессиядаги {@code visits}'ни оширади.
+     *
+     * <p>{@code visits}'ни {@link HttpSession}'га ёзамиз — қиймат Hazelcast'га
+     * боради ва хоҳлаган нусха уни ўқийди. Саҳифани F5 билан янгилаганда LB сизни
+     * гоҳ app1, гоҳ app2'га юборса ҳам, ҳисоб ўсиб бораверади.
+     */
     @GetMapping("/")
     public String dashboard(HttpServletRequest request,
                             HttpSession session,
                             Authentication authentication,
                             Model model) {
-        // Sessiyaga yozamiz -> bu qiymat Hazelcast'ga boradi va barcha instance ko'radi
         Integer visits = (Integer) session.getAttribute("visits");
         visits = (visits == null) ? 1 : visits + 1;
         session.setAttribute("visits", visits);
@@ -62,8 +81,11 @@ public class PageController {
     }
 
     /**
-     * AlpineJS shu endpoint'ni chaqiradi. Har chaqiruvda sessiyadagi "clicks"
-     * oshadi. LB so'rovni turli instance'larga yuborsa ham, hisob saqlanadi.
+     * AlpineJS чақирадиган ping endpoint'и: ҳар чақирувда сессиядаги {@code clicks}
+     * ошади.
+     *
+     * <p>LB сўровни турли нусхаларга юборса ҳам {@code clicks} сақланади, чунки у
+     * сессияда — яъни Hazelcast'да. Жавоб {@code @ResponseBody} орқали JSON бўлиб қайтади.
      */
     @PostMapping("/api/ping")
     @ResponseBody

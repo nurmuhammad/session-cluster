@@ -6,13 +6,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
- * Ilova ishga tushganda Postgres'da test foydalanuvchi yaratadi (agar yo'q bo'lsa).
- * Login: admin / parol: admin123
+ * Илова ишга тушганда Postgres'да демо фойдаланувчи ({@code admin} / {@code admin123})
+ * яратади — агар ҳали мавжуд бўлмаса.
  *
- * MUHIM: app1 va app2 bir vaqtda ishga tushadi, shuning uchun "topilmasa -> saqla"
- * tekshiruvi ikkala instance o'rtasida atomar EMAS: ikkalasi ham bo'sh deb ko'rib
- * saqlashi mumkin. Shu sababli unique-constraint qarama-qarshiligini xotirjam
- * yutamiz — bu boshqa instance allaqachon seed qilganini bildiradi.
+ * <p><b>Race-safe:</b> app1 ва app2 бир вақтда кўтарилади, шунинг учун
+ * «топилмаса → сақла» текшируви иккала нусха орасида атомар эмас: иккови ҳам
+ * бўш деб кўриб {@code admin}'ни ёзишга уриниши мумкин. Иккинчисида unique
+ * constraint бузилиб {@link DataIntegrityViolationException} отилади; уни хотиржам
+ * ютамиз, чунки бу «бошқа нусха аллақачон seed қилди» дегани — хатолик эмас.
  */
 @Component
 public class DataSeeder implements CommandLineRunner {
@@ -36,7 +37,7 @@ public class DataSeeder implements CommandLineRunner {
                     passwordEncoder.encode("admin123"),
                     "ADMIN"));
         } catch (DataIntegrityViolationException alreadySeeded) {
-            // Boshqa instance ayni paytda admin'ni yaratib ulgurdi — muammo emas.
+            // Бошқа нусха айни пайтда admin'ни яратиб улгурди — муаммо эмас.
         }
     }
 }
