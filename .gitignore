@@ -1,7 +1,15 @@
-target/
-app/target/
+# Gradle
+.gradle/
+build/
+app/build/
+
+# hz-ext build vaqtida (gradle copyHzLibs) qayta yaratiladi
 app/hz-ext/
+
+# Java
 *.class
+
+# IDE
 .idea/
 *.iml
 .DS_Store
