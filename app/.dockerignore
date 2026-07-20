@@ -1,5 +1,4 @@
 src
-!target/*.jar
-.mvn
-mvnw
-mvnw.cmd
+build
+!build/libs/*.jar
+.gradle
