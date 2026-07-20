@@ -6,7 +6,7 @@ plugins {
     id 'gg.jte.gradle' version '3.2.1'
 }
 
-group = 'com.example'
+group = 'com.smartbox'
 version = '1.0.0'
 description = 'Spring Boot 4 + JTE + AlpineJS + Hazelcast session clustering'
 
@@ -24,6 +24,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // Lombok — boilerplate (getter/setter/konstruktor)ni kamaytiradi.
+    // compileOnly: faqat build vaqtida kerak (runtime'da jar ichiga kirmaydi);
+    // annotationProcessor: kompilyatsiya vaqtida kod generatsiyasi.
+    compileOnly 'org.projectlombok:lombok:1.18.46'
+    annotationProcessor 'org.projectlombok:lombok:1.18.46'
 
     // Sessiyani Hazelcast'da saqlash.
     // MUHIM: Spring Boot 4 -> Spring Session 4.0 spring-session-hazelcast modulini
