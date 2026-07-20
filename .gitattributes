@@ -1,0 +1,12 @@
+# Barcha matnli fayllar repo'da LF bo'lsin (Windows/Linux churn'ini yo'qotadi).
+* text=auto eol=lf
+
+# Windows skript va IDE fayllari CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary
+*.jar binary
+*.png binary
+*.jpg binary
+*.ico binary
