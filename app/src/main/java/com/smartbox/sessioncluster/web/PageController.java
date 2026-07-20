@@ -1,4 +1,4 @@
-package com.example.demo.web;
+package com.smartbox.sessioncluster.web;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
